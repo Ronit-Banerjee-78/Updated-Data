@@ -1,0 +1,6 @@
+{
+  "name": "Jiyonkathi NGO Website",
+  "description": "A sustainable living community and NGO website showcasing eco-friendly initiatives, community farming, events, donation awareness, and administrative portal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
