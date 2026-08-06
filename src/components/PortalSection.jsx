@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { WELFARE_PROJECTS } from "../data";
 
-export default function PortalSection({ userSession, setUserSession }) {
+export default function PortalSection({ userSession, setUserSession, setActiveTab = () => { } }) {
   // Login Form State
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -284,7 +284,7 @@ export default function PortalSection({ userSession, setUserSession }) {
                     <span className="text-[10px] text-pink-400 font-extrabold uppercase tracking-wider block">
                       Staff Admin Account
                     </span>
-                    <div className="text-xs space-y-0.5 font-mono text-stone-300">
+                    {/* <div className="text-xs space-y-0.5 font-mono text-stone-300">
                       <div>
                         Email:{" "}
                         <span className="text-white font-bold select-all">
@@ -297,7 +297,7 @@ export default function PortalSection({ userSession, setUserSession }) {
                           admin123
                         </span>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>
@@ -338,7 +338,7 @@ export default function PortalSection({ userSession, setUserSession }) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
+                  {/* <div className="flex justify-between items-center">
                     <label className="text-xs font-bold text-stone-500 block">
                       Security Password
                     </label>
@@ -353,7 +353,7 @@ export default function PortalSection({ userSession, setUserSession }) {
                     >
                       Autofill Demo Password
                     </button>
-                  </div>
+                  </div> */}
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-stone-400" />
                     <input

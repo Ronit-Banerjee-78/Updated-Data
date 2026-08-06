@@ -1,4 +1,18 @@
 -- Domain configuration and Demo data initialization
+CREATE TABLE IF NOT EXISTS site_settings (
+    id SERIAL PRIMARY KEY,
+    data JSONB NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS site_files (
+    id SERIAL PRIMARY KEY,
+    filename TEXT NOT NULL,
+    mimetype TEXT NOT NULL,
+    data BYTEA NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS projects (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -13,3 +27,4 @@ INSERT INTO projects (title, target_amount, raised_amount) VALUES
 ('Mobile Pediatric Units', 120000.00, 45000.00),
 ('Solar School Community Hubs', 80000.00, 32000.00)
 ON CONFLICT DO NOTHING;
+

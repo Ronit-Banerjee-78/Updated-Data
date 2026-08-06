@@ -5,7 +5,22 @@ import { SiteContext } from "../context/SiteContext";
 import { Compass, Target, HeartHandshake, Sprout, BookOpen, ShieldCheck, Sparkles, MapPin, CheckCircle2 } from "lucide-react";
 
 export default function MissionSection() {
-  const { language } = useContext(SiteContext);
+  const { siteData, language } = useContext(SiteContext);
+
+  const customProjects = (siteData && siteData.work && siteData.work.length > 0)
+    ? siteData.work.map(w => ({
+      id: w.id,
+      titleBn: w.titleBengali || w.title,
+      titleEn: w.titleEnglish || w.title,
+      descBn: w.descriptionBengali || w.description,
+      descEn: w.descriptionEnglish || w.description,
+      categoryBn: w.category || "আমাদের কাজ",
+      categoryEn: w.category || "Our Work",
+      location: w.location || "Pratappur, Aushgram",
+      impact: w.impact,
+      url: w.image
+    }))
+    : null;
 
   const missionPoints = [
     {
@@ -94,9 +109,9 @@ export default function MissionSection() {
   return (
     <div className="py-16 bg-stone-50 w-full min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-        
+
         {/* Banner Section matching PDF Page 2 styling */}
-        <div className="bg-stone-900 rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden border border-stone-800">
+        <div className="bg-stone-100 rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden border border-stone-50">
           <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10 max-w-3xl space-y-4">
             <div className="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-500/30">
@@ -106,17 +121,17 @@ export default function MissionSection() {
             <h1 className="text-3xl sm:text-5xl font-black text-amber-400 tracking-tight leading-tight">
               JIYONKATHI (জিয়নকাঠি)
             </h1>
-            <p className="text-xl font-bold text-stone-200">
+            <p className="text-xl font-bold text-stone-800">
               A Sustainable Living Community
             </p>
-            <p className="text-sm sm:text-base text-stone-400 font-serif italic border-l-2 border-emerald-500 pl-4 py-1">
+            <p className="text-sm sm:text-base text-stone-600 font-serif italic border-l-2 border-emerald-500 pl-4 py-1">
               &quot;An effort to transition to the Post-Petroleum World — Committed to changing our lifestyles to sustainable ones.&quot;
             </p>
           </div>
         </div>
 
         {/* Core Vision Statement from PDF Page 10 */}
-        <div className="bg-white rounded-3xl p-8 sm:p-10 border border-stone-200 shadow-xl space-y-6">
+        <div className="bg-stone-100 rounded-3xl p-8 sm:p-10 border border-stone-200 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-emerald-700">
             <Target className="w-8 h-8 flex-shrink-0" />
             <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
@@ -195,23 +210,58 @@ export default function MissionSection() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {photoHighlights.map((pic, idx) => (
-              <div key={idx} className="group bg-stone-50 rounded-2xl overflow-hidden border border-stone-200 hover:shadow-md transition-all">
-                <div className="h-48 overflow-hidden relative">
-                  <img
-                    src={pic.url}
-                    alt={pic.titleBn}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-emerald-300 text-[10px] font-bold px-2.5 py-1 rounded-lg">
-                    {language === "bn" ? pic.categoryBn : pic.categoryEn}
-                  </span>
+            {(customProjects || photoHighlights).map((pic, idx) => (
+              <div key={pic.id || idx} className="group bg-stone-50 rounded-2xl overflow-hidden border border-stone-200 hover:shadow-lg transition-all flex flex-col justify-between">
+                <div>
+                  <div className="h-48 overflow-hidden relative bg-stone-900">
+                    {pic.url ? (
+                      <img
+                        src={pic.url}
+                        alt={pic.titleBn || pic.titleEn}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-stone-900 via-emerald-950 to-stone-900 p-5 flex flex-col justify-between text-white">
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
+                          {language === "bn" ? pic.categoryBn : pic.categoryEn}
+                        </span>
+                        <p className="text-sm font-bold text-stone-100 line-clamp-3 leading-snug">
+                          {language === "bn" ? pic.titleBn : pic.titleEn}
+                        </p>
+                      </div>
+                    )}
+                    <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-emerald-300 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                      {language === "bn" ? pic.categoryBn : pic.categoryEn}
+                    </span>
+                  </div>
+                  <div className="p-5 space-y-2">
+                    <h4 className="font-extrabold text-stone-900 text-base leading-snug group-hover:text-emerald-700 transition-colors">
+                      {language === "bn" ? pic.titleBn : pic.titleEn}
+                    </h4>
+                    {(pic.descBn || pic.descEn) && (
+                      <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed">
+                        {language === "bn" ? pic.descBn : pic.descEn}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="p-4">
-                  <h4 className="font-bold text-stone-900 text-sm">
-                    {language === "bn" ? pic.titleBn : pic.titleEn}
-                  </h4>
-                </div>
+
+                {(pic.location || pic.impact) && (
+                  <div className="px-5 pb-4 pt-0 flex flex-wrap items-center justify-between text-[11px] text-stone-500 border-t border-stone-200/60 pt-3 mt-1">
+                    {pic.location && (
+                      <span className="flex items-center space-x-1 font-semibold text-stone-600">
+                        <MapPin className="w-3 h-3 text-emerald-600" />
+                        <span>{pic.location}</span>
+                      </span>
+                    )}
+                    {pic.impact && (
+                      <span className="bg-emerald-50 text-emerald-800 font-bold px-2 py-0.5 rounded-md border border-emerald-100">
+                        {pic.impact}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

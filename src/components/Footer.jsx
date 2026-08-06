@@ -200,10 +200,10 @@ export default function Footer({ setActiveTab }) {
               </li>
               <li>
                 <button
-                  onClick={() => handleLinkClick("donation")}
+                  onClick={() => handleLinkClick("volunteer")}
                   className="hover:text-emerald-400 transition-colors"
                 >
-                  Donation
+                  Volunteer With Us
                 </button>
               </li>
               <li>

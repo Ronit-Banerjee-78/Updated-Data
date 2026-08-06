@@ -10,7 +10,6 @@ import GallerySection from "../components/GallerySection";
 import EventsSection from "../components/EventsSection";
 import BlogSection from "../components/BlogSection";
 import ContactSection from "../components/ContactSection";
-import DonationSection from "../components/DonationSection";
 import MembersSection from "../components/MembersSection";
 import PortalSection from "../components/PortalSection";
 import { motion, AnimatePresence } from "motion/react";
@@ -18,7 +17,15 @@ import { motion, AnimatePresence } from "motion/react";
 /**
  * Root Page Component for Jiyonkathi App
  */
-export default function Page({ activeTab = "home", setActiveTab = () => {}, userSession = null, setUserSession = () => {} }) {
+export default function Page({ activeTab = "home", setActiveTab = () => { }, userSession = null, setUserSession = () => { } }) {
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    if (typeof document !== "undefined") {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  }, [activeTab]);
+
   const renderActiveSection = () => {
     switch (activeTab) {
       case "home":
@@ -40,7 +47,7 @@ export default function Page({ activeTab = "home", setActiveTab = () => {}, user
       case "contact":
         return <ContactSection />;
       case "donation":
-        return <DonationSection />;
+        return <HomeSection setActiveTab={setActiveTab} />;
       case "members":
         return <MembersSection />;
       case "portal":
@@ -49,6 +56,7 @@ export default function Page({ activeTab = "home", setActiveTab = () => {}, user
           <PortalSection
             userSession={userSession}
             setUserSession={setUserSession}
+            setActiveTab={setActiveTab}
           />
         );
       default:

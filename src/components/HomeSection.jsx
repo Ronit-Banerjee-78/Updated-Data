@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useContext } from "react";
 import { SiteContext } from "../context/SiteContext";
 
@@ -9,7 +9,23 @@ import { motion } from "motion/react";
 import * as Icons from "lucide-react";
 
 export default function HomeSection({ setActiveTab }) {
-  const { siteData, language } = useContext(SiteContext);
+  const { siteData, language, setSelectedCampaign } = useContext(SiteContext);
+  const [volIndex, setVolIndex] = useState(0);
+
+  const volunteers = siteData.volunteersList || [
+    { id: "v-1", name: "Sutapa Sarkar", designation: "Auxiliary Education Volunteer Teacher", location: "Burdwan, WB", image: "/images/education-center.jpg", bio: "Teaching village youth about nature and local heritage." },
+    { id: "v-2", name: "Anirban Mukherjee", designation: "Organic Farming & Soil Testing Volunteer", location: "Kolkata, WB", image: "/images/seedbed.jpg", bio: "Weekend volunteer leading indigenous seed conservation drives." },
+    { id: "v-3", name: "Swapna Ghosh", designation: "Nature Awareness & Community Organizer", location: "Aushgram, WB", image: "/images/community-collage.jpg", bio: "Organizing village women for sustainable handicrafts and seed collection." },
+    { id: "v-4", name: "Debabrata Sen", designation: "Eco-farming & Bio-fertilizer Field Lead", location: "Bolpur, WB", image: "/images/paddy-harvesting.jpg", bio: "Training smallholders in zero-chemical natural farming." }
+  ];
+
+  const handleNextVol = () => {
+    setVolIndex((prev) => (prev + 1) % volunteers.length);
+  };
+
+  const handlePrevVol = () => {
+    setVolIndex((prev) => (prev - 1 + volunteers.length) % volunteers.length);
+  };
   // Utility to render Lucide icons dynamically
   const renderIcon = (iconName, className = "w-6 h-6") => {
     const IconComponent = Icons[iconName];
@@ -23,7 +39,7 @@ export default function HomeSection({ setActiveTab }) {
 
   return (
     <div id="home-section" className="space-y-24 pb-20">
-      {/* 1. Hero Section matching user screenshot */}
+      {/* 1. Hero Banner Section in Dark Theme */}
       <section
         id="hero-banner"
         className="relative bg-stone-950 text-white overflow-hidden py-20 sm:py-32"
@@ -93,12 +109,12 @@ export default function HomeSection({ setActiveTab }) {
                 <span>{language === "bn" ? "স্বেচ্ছাসেবী হিসেবে যোগ দিন" : "Become a Volunteer"}</span>
               </button>
               <button
-                id="hero-donate-cta"
-                onClick={() => setActiveTab("donation")}
+                id="hero-work-cta"
+                onClick={() => setActiveTab("work")}
                 className="bg-stone-900/90 hover:bg-stone-800/90 border border-stone-700 text-stone-100 text-base font-semibold px-8 py-4 rounded-2xl active:scale-95 transition-all duration-200 flex items-center justify-center space-x-2"
               >
-                <Icons.Gift className="w-5 h-5 text-emerald-400" />
-                <span>{language === "bn" ? "দান করুন ও পাশে থাকুন" : "Donate & Support"}</span>
+                <Icons.Briefcase className="w-5 h-5 text-emerald-400" />
+                <span>{language === "bn" ? "আমাদের কাজ দেখুন" : "Explore Our Work"}</span>
               </button>
             </motion.div>
           </div>
@@ -111,10 +127,10 @@ export default function HomeSection({ setActiveTab }) {
           id="ngo-video-section"
           className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-20"
         >
-          <div className="bg-stone-900 text-white rounded-3xl border border-stone-800 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0 items-center">
-            
+          <div className="bg-white text-stone-900 rounded-3xl border border-stone-200 shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0 items-center">
+
             {/* Video Player */}
-            <div className="lg:col-span-7 bg-black aspect-video relative group flex items-center justify-center">
+            <div className="lg:col-span-7 bg-stone-900 aspect-video relative group flex items-center justify-center">
               <video
                 key={siteData.homepageVideo.url}
                 src={siteData.homepageVideo.url}
@@ -129,34 +145,34 @@ export default function HomeSection({ setActiveTab }) {
             {/* Video Info */}
             <div className="lg:col-span-5 p-8 sm:p-10 space-y-6">
               <div className="space-y-2">
-                <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full inline-block">
+                <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full inline-block">
                   {language === "bn" ? "বিশেষ ভিডিও চিত্র" : "Featured NGO Works Video"}
                 </span>
-                <h3 className="text-2xl font-extrabold text-white leading-tight">
+                <h3 className="text-2xl font-extrabold text-stone-900 leading-tight">
                   {siteData.homepageVideo.title}
                 </h3>
                 {siteData.homepageVideo.titleEnglish && (
-                  <p className="text-xs text-stone-400 font-medium">
+                  <p className="text-xs text-stone-500 font-medium">
                     {siteData.homepageVideo.titleEnglish}
                   </p>
                 )}
               </div>
 
-              <p className="text-sm text-stone-300 leading-relaxed">
+              <p className="text-sm text-stone-600 leading-relaxed">
                 {siteData.homepageVideo.description || "জিয়নকাঠির প্রকৃতিবান্ধব কৃষি, বীজ সংরক্ষণ ও সার্বিক গ্রামের অগ্রগতির ভিডিওচিত্র।"}
               </p>
 
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
                   onClick={() => setActiveTab("gallery")}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-3 rounded-xl transition-all flex items-center space-x-2"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-sm flex items-center space-x-2"
                 >
                   <Icons.Video className="w-4 h-4" />
                   <span>{language === "bn" ? "গ্যালারির সকল ভিডিও দেখুন" : "View All Videos in Gallery"}</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("blog")}
-                  className="bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold text-xs px-5 py-3 rounded-xl transition-all"
+                  className="bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 font-semibold text-xs px-5 py-3 rounded-xl transition-all"
                 >
                   <span>{language === "bn" ? "ভিডিও ব্লগ দেখুন" : "Watch Video Blogs"}</span>
                 </button>
@@ -288,46 +304,105 @@ export default function HomeSection({ setActiveTab }) {
                   </div>
 
                   <div className="space-y-4">
-                    {/* Progress Bar */}
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-xs font-bold">
-                        <span className="text-emerald-600">
-                          {percentage}% {language === "bn" ? "সম্পন্ন" : "Raised"}
-                        </span>
-                        <span className="text-stone-400">
-                          {language === "bn" ? "লক্ষ্য:" : "Target:"} ₹{project.targetAmount.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-500 rounded-full"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center text-xs text-stone-500">
-                      <span>
-                        <strong>{project.donorsCount}</strong> {language === "bn" ? "জন সহযোগী" : "Patrons Sponsoring"}
-                      </span>
-                      <span className="text-emerald-600 font-bold">
-                        ₹{project.raisedAmount.toLocaleString()} {language === "bn" ? "সংগৃহীত" : "Raised"}
-                      </span>
-                    </div>
-
                     <button
-                      id={`project-teaser-donate-${project.id}`}
-                      onClick={() => setActiveTab("donation")}
+                      id={`project-teaser-volunteer-${project.id}`}
+                      onClick={() => setActiveTab("volunteer")}
                       className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm py-2.5 rounded-xl transition-all flex items-center justify-center space-x-1.5"
                     >
-                      <Icons.HeartHandshake className="w-4 h-4" />
-                      <span>{language === "bn" ? "এই প্রকল্পে সাহায্য করুন" : "Back This Campaign"}</span>
+                      <Icons.HandHelping className="w-4 h-4" />
+                      <span>{language === "bn" ? "এই প্রকল্পে যোগ দিন" : "Participate as Volunteer"}</span>
                     </button>
                   </div>
                 </div>
               </motion.div>
             );
           })}
+        </div>
+      </section>
+
+      {/* 4.5. Volunteers Showcase Carousel */}
+      <section id="volunteers-carousel-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-emerald-50/80 text-stone-900 rounded-3xl p-8 sm:p-12 border border-emerald-200/80 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-200/40 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 border-b border-emerald-200/60 pb-6">
+            <div>
+              <span className="text-emerald-800 font-bold text-xs uppercase tracking-widest block mb-1">
+                {language === "bn" ? "আমাদের নিবেদিত প্রাণ পরিবার" : "Dedicated Forces Behind Jiyonkathi"}
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-stone-900">
+                {language === "bn" ? "আমাদের মূল স্বেচ্ছাসেবীবৃন্দ" : "Meet Our Community Volunteers"}
+              </h2>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handlePrevVol}
+                className="bg-white hover:bg-emerald-600 text-stone-700 hover:text-white p-3 rounded-full transition-colors border border-stone-200 shadow-sm"
+                aria-label="Previous Volunteer"
+              >
+                <Icons.ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleNextVol}
+                className="bg-white hover:bg-emerald-600 text-stone-700 hover:text-white p-3 rounded-full transition-colors border border-stone-200 shadow-sm"
+                aria-label="Next Volunteer"
+              >
+                <Icons.ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+            {/* Volunteer Photo Box */}
+            <div className="md:col-span-5 flex justify-center">
+              <div className="w-48 h-48 sm:w-64 sm:h-64 rounded-2xl overflow-hidden border-4 border-white shadow-md bg-stone-100 flex items-center justify-center shrink-0">
+                {volunteers[volIndex].image ? (
+                  <img
+                    src={volunteers[volIndex].image}
+                    alt={volunteers[volIndex].name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Icons.Users className="w-20 h-20 text-stone-400" />
+                )}
+              </div>
+            </div>
+
+            {/* Volunteer Information Box */}
+            <div className="md:col-span-7 space-y-4">
+              <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider inline-block">
+                {volunteers[volIndex].designation || "Community Volunteer"}
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+                {volunteers[volIndex].name}
+              </h3>
+              <p className="text-stone-700 text-sm sm:text-base leading-relaxed italic bg-white/70 p-4 rounded-2xl border border-stone-200/60">
+                &quot;{volunteers[volIndex].bio || volunteers[volIndex].motivation || "Dedicated to driving positive environmental and social impact in rural Bengal."}&quot;
+              </p>
+              <div className="pt-2 flex items-center gap-4 text-xs font-semibold text-stone-600">
+                <span className="flex items-center gap-1">
+                  <Icons.MapPin className="w-4 h-4 text-emerald-600" />
+                  {volunteers[volIndex].location || "Purba Bardhaman, WB"}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Icons.HandHelping className="w-4 h-4 text-emerald-600" />
+                  {volunteers[volIndex].program || "Field Outreach Volunteer"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Dots Indicator */}
+          <div className="flex justify-center space-x-2 mt-8">
+            {volunteers.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setVolIndex(idx)}
+                className={`h-2.5 rounded-full transition-all ${idx === volIndex ? "w-8 bg-emerald-600" : "w-2.5 bg-stone-300 hover:bg-stone-400"
+                  }`}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -356,24 +431,24 @@ export default function HomeSection({ setActiveTab }) {
             <div className="bg-white rounded-3xl p-8 border border-stone-200 flex flex-col justify-between space-y-8 shadow-sm">
               <div className="space-y-4">
                 <div className="bg-emerald-50 text-emerald-600 w-12 h-12 rounded-xl flex items-center justify-center">
-                  <Icons.Heart className="w-6 h-6" />
+                  <Icons.Briefcase className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold text-stone-900">
-                  {language === "bn" ? "দান করুন" : "Make a Donation"}
+                  {language === "bn" ? "আমাদের কাজ জানুন" : "Explore Our Work"}
                 </h3>
                 <p className="text-sm text-stone-500 leading-relaxed">
                   {language === "bn"
-                    ? "আমাদের জৈব কৃষি, শিশুদের পাঠদান ও চিকিৎসা শিবিরে আর্থিক সহায়তা প্রদান করুন।"
-                    : "Support one of our child welfare initiatives or pledge general funding for rapid medical disaster intervention."}
+                    ? "আমাদের দেশীয় ধান ও বীজ সংরক্ষণ, বৈচিত্র্যময় পরিবেশ রক্ষা এবং সহায়ক শিক্ষা কার্যক্রম দেখুন।"
+                    : "Discover our indigenous seed conservation, ecological preservation, and auxiliary education initiatives."}
                 </p>
               </div>
               <button
-                id="help-bento-donate"
-                onClick={() => setActiveTab("donation")}
+                id="help-bento-work"
+                onClick={() => setActiveTab("work")}
                 className="group flex items-center space-x-1 text-sm font-bold text-emerald-600 hover:text-emerald-700"
               >
-                <span>{language === "bn" ? "দান করার পাতা" : "Pledge Funds"}</span>
-                <Icons.ArrowRight className="w-4 h-4 group-hover:transtone-x-1 transition-transform" />
+                <span>{language === "bn" ? "আমাদের কাজের বিবরণী" : "Explore Initiatives"}</span>
+                <Icons.ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
 

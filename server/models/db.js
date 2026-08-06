@@ -1,29 +1,61 @@
-import pg from 'pg';
+import pg from "pg";
+import dotenv from "dotenv";
+
+dotenv.config();
+
 const { Pool } = pg;
 
-// Uses DATABASE_URL for Supabase/Cloud SQL, or defaults to local
-const pool = new Pool(
-  process.env.DATABASE_URL 
-    ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 3000 }
-    : {
-        user: process.env.DB_USER || 'hope_admin',
-        host: process.env.DB_HOST || 'localhost',
-        database: process.env.DB_NAME || 'hope_initiative',
-        password: process.env.DB_PASSWORD || 'hope_password',
-        port: process.env.DB_PORT || 5432,
-        connectionTimeoutMillis: 2000,
-      }
-);
+// Helper to construct connection pool settings
+const getPoolConfig = () => {
+  // Option 1: Explicit DB_* environment variables
+  if (process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASSWORD) {
+    const isRemote =
+      process.env.DB_HOST !== "localhost" &&
+      process.env.DB_HOST !== "127.0.0.1";
+    return {
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASSWORD,
+      port: Number(process.env.DB_PORT) || 5432,
+      ...(isRemote ? { ssl: { rejectUnauthorized: false } } : {}),
+      connectionTimeoutMillis: 5000,
+    };
+  }
 
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle DB client:', err.message);
+  // Option 2: Full connection string (DATABASE_URL)
+  if (process.env.DATABASE_URL) {
+    return {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 5000,
+    };
+  }
+
+  // Option 3: Local defaults
+  return {
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: Number(process.env.DB_PORT) || 5432,
+    connectionTimeoutMillis: 3000,
+  };
+};
+
+let pool = new Pool(getPoolConfig());
+
+pool.on("error", (err) => {
+  console.error("Unexpected error on idle DB client:", err.message);
 });
 
 export let isDbConnected = false;
 
 export const initDB = async () => {
   try {
+    pool = new Pool(getPoolConfig());
     const client = await pool.connect();
+
     try {
       await client.query(`
         CREATE TABLE IF NOT EXISTS site_settings (
@@ -52,8 +84,16 @@ export const initDB = async () => {
     }
   } catch (error) {
     isDbConnected = false;
-    console.warn("Database not connected — using in-memory fallback mode.");
+    console.warn(
+      `Database connection failed (${error.message}) — using in-memory fallback mode.`,
+    );
   }
+};
+
+export const ensureDbConnected = async () => {
+  if (isDbConnected) return true;
+  await initDB();
+  return isDbConnected;
 };
 
 export default pool;

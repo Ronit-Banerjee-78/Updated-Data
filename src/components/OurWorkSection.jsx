@@ -6,8 +6,8 @@ import { SiteContext } from "../context/SiteContext";
 import { Leaf, Users, ShieldCheck, Sun, CheckCircle2 } from "lucide-react";
 import { motion } from "motion/react";
 
-export default function OurWorkSection() {
-  const { siteData } = useContext(SiteContext);
+export default function OurWorkSection({ setActiveTab }) {
+  const { siteData, setSelectedCampaign } = useContext(SiteContext);
 
   const getIcon = (idx) => {
     switch (idx % 4) {
@@ -93,7 +93,7 @@ export default function OurWorkSection() {
                 </p>
 
                 {project.highlights && project.highlights.length > 0 && (
-                  <div className="space-y-2 pt-4 border-t border-stone-200/60">
+                  <div className="space-y-2 pt-4 border-t border-stone-200/60 mb-6">
                     {project.highlights.map((h, i) => (
                       <div key={i} className="flex items-center space-x-2 text-xs font-semibold text-stone-700">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -101,6 +101,18 @@ export default function OurWorkSection() {
                       </div>
                     ))}
                   </div>
+                )}
+
+                {setActiveTab && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (setActiveTab) setActiveTab("volunteer");
+                    }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 px-4 rounded-xl transition-colors flex items-center justify-center space-x-2 shadow-sm"
+                  >
+                    <span>স্বেচ্ছাসেবী হিসেবে যোগ দিন (Join as Volunteer)</span>
+                  </button>
                 )}
               </div>
             </motion.div>

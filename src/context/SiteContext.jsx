@@ -14,7 +14,9 @@ const defaultSiteData = {
     bannerText: BENGALI_CONTENT.home.narrative,
     address: BENGALI_CONTENT.home.address,
     googleMapsUrl: BENGALI_CONTENT.home.googleMapsUrl,
-    facebookUrl: BENGALI_CONTENT.home.facebookUrl
+    facebookUrl: BENGALI_CONTENT.home.facebookUrl,
+    qrCodeImage: "/images/jiyonkathi-map.jpg",
+    upiId: "jiyonkathi@upi"
   },
   homepageVideo: {
     title: DEFAULT_VIDEOS[0].title,
@@ -34,9 +36,15 @@ const defaultSiteData = {
   },
   mission: BENGALI_CONTENT.mission,
   members: [
-    { id: 1, name: "Raju Mandal", role: "Lead Farmer & Seed Conservator", bio: "Expert in indigenous seed conservation and organic paddy cultivation." },
-    { id: 2, name: "Sarmistha Roy", role: "Education Coordinator", bio: "Oversees the auxiliary education center and children nature awareness." },
-    { id: 3, name: "Arindam Das", role: "Sustainability Expert", bio: "Guides energy transition, renewable energy & community outreach." }
+    { id: 1, name: "Raju Mandal", role: "Lead Farmer & Seed Conservator", bio: "Expert in indigenous seed conservation and organic paddy cultivation.", image: "/images/paddy-planting.jpg" },
+    { id: 2, name: "Sarmistha Roy", role: "Education Coordinator", bio: "Oversees the auxiliary education center and children nature awareness.", image: "/images/education-center.jpg" },
+    { id: 3, name: "Arindam Das", role: "Sustainability Expert", bio: "Guides energy transition, renewable energy & community outreach.", image: "/images/farming-collage.jpg" }
+  ],
+  volunteersList: [
+    { id: "v-1", name: "Sutapa Sarkar", designation: "Auxiliary Education Volunteer Teacher", location: "Burdwan, WB", image: "/images/education-center.jpg", bio: "Teaching village youth about nature and local heritage." },
+    { id: "v-2", name: "Anirban Mukherjee", designation: "Organic Farming & Soil Testing Volunteer", location: "Kolkata, WB", image: "/images/seedbed.jpg", bio: "Weekend volunteer leading indigenous seed conservation drives." },
+    { id: "v-3", name: "Swapna Ghosh", designation: "Nature Awareness & Community Organizer", location: "Aushgram, WB", image: "/images/community-collage.jpg", bio: "Organizing village women for sustainable handicrafts and seed collection." },
+    { id: "v-4", name: "Debabrata Sen", designation: "Eco-farming & Bio-fertilizer Field Lead", location: "Bolpur, WB", image: "/images/paddy-harvesting.jpg", bio: "Training smallholders in zero-chemical natural farming." }
   ],
   gallery: [
     ...DEFAULT_VIDEOS.filter(v => v.showInGallery).map((v, i) => ({
@@ -69,6 +77,7 @@ export const SiteProvider = ({ children }) => {
   const [siteData, setSiteData] = useState(defaultSiteData);
   const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState('bn'); // 'bn' for Bengali, 'en' for English
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
 
   const toggleLanguage = () => {
     setLanguage((prev) => (prev === 'bn' ? 'en' : 'bn'));
@@ -84,6 +93,11 @@ export const SiteProvider = ({ children }) => {
             ...data.data,
             general: { ...prev.general, ...(data.data.general || {}) },
             about: { ...prev.about, ...(data.data.about || {}) },
+            members: Array.isArray(data.data.members) ? data.data.members : prev.members,
+            volunteersList: Array.isArray(data.data.volunteersList) ? data.data.volunteersList : prev.volunteersList,
+            gallery: Array.isArray(data.data.gallery) ? data.data.gallery : prev.gallery,
+            blogs: Array.isArray(data.data.blogs) ? data.data.blogs : prev.blogs,
+            work: Array.isArray(data.data.work) ? data.data.work : prev.work,
           }));
         }
       } catch (error) {
@@ -105,7 +119,7 @@ export const SiteProvider = ({ children }) => {
   };
 
   return (
-    <SiteContext.Provider value={{ siteData, setSiteData: saveSiteData, loading, language, setLanguage, toggleLanguage }}>
+    <SiteContext.Provider value={{ siteData, setSiteData: saveSiteData, loading, language, setLanguage, toggleLanguage, selectedCampaign, setSelectedCampaign }}>
       {children}
     </SiteContext.Provider>
   );

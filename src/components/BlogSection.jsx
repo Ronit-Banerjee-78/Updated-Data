@@ -31,19 +31,19 @@ export default function BlogSection() {
   const allBlogs = (siteData && siteData.blogs && siteData.blogs.length > 0)
     ? siteData.blogs
     : [
-        ...DEFAULT_VIDEOS.map((v) => ({
-          id: `vid-${v.id}`,
-          type: "video",
-          title: v.title,
-          excerpt: v.description,
-          videoUrl: v.url,
-          author: "জিয়নকাঠি প্রচার দল",
-          date: v.date || "আগস্ট ২০২৬",
-          category: "ভিডিও ডকুমেন্টারি",
-          content: `${v.description}\n\nজিয়নকাঠির তেরো বছরের পথচলায় প্রকৃতিবান্ধব কৃষি, বীজ সংরক্ষণ, শিশুদের শিক্ষা ও গ্রামীণ স্বাবলম্বিতার ভিডিওচিত্র।`
-        })),
-        ...BLOGS.map((b) => ({ ...b, type: "article" }))
-      ];
+      ...DEFAULT_VIDEOS.map((v) => ({
+        id: `vid-${v.id}`,
+        type: "video",
+        title: v.title,
+        excerpt: v.description,
+        videoUrl: v.url,
+        author: "জিয়নকাঠি প্রচার দল",
+        date: v.date || "আগস্ট ২০২৬",
+        category: "ভিডিও ডকুমেন্টারি",
+        content: `${v.description}\n\nজিয়নকাঠির তেরো বছরের পথচলায় প্রকৃতিবান্ধব কৃষি, বীজ সংরক্ষণ, শিশুদের শিক্ষা ও গ্রামীণ স্বাবলম্বিতার ভিডিওচিত্র।`
+      })),
+      ...BLOGS.map((b) => ({ ...b, type: "article" }))
+    ];
 
   // Lock scroll when modal is open
   useEffect(() => {
@@ -135,14 +135,26 @@ export default function BlogSection() {
                         <span>{language === "bn" ? "ভিডিও ডকুমেন্টারি" : "Video Documentary"}</span>
                       </span>
                     </div>
-                  ) : (
+                  ) : blog.image ? (
                     <div className="w-full h-full relative">
                       <img
-                        src={blog.image || "/images/ecology-collage.jpg"}
-                        alt={blog.title}
+                        src={blog.image}
+                        alt={blog.title || "Blog image"}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    </div>
+                  ) : (
+                    /* Dynamic Typographic Card Header when no image is provided */
+                    <div className="w-full h-full bg-gradient-to-br from-emerald-900 via-stone-900 to-stone-950 p-6 flex flex-col justify-between text-white relative">
+                      <div className="flex items-center space-x-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                        <Sparkles className="w-4 h-4" />
+                        <span>{blog.category || "Jiyonkathi Story"}</span>
+                      </div>
+                      <p className="text-sm font-bold line-clamp-3 text-stone-100 leading-snug">
+                        {language === "bn" ? (blog.titleBengali || blog.title) : (blog.titleEnglish || blog.title)}
+                      </p>
                     </div>
                   )}
 
@@ -171,11 +183,11 @@ export default function BlogSection() {
                     </div>
 
                     <h3 className="text-lg font-bold text-stone-900 group-hover:text-emerald-700 transition-colors leading-snug line-clamp-2">
-                      {blog.title}
+                      {language === "bn" ? (blog.titleBengali || blog.title) : (blog.titleEnglish || blog.title)}
                     </h3>
 
                     <p className="text-xs sm:text-sm text-stone-600 leading-relaxed line-clamp-3">
-                      {blog.excerpt}
+                      {language === "bn" ? (blog.excerptBengali || blog.excerpt) : (blog.excerptEnglish || blog.excerpt || blog.description)}
                     </p>
                   </div>
 
@@ -245,7 +257,7 @@ export default function BlogSection() {
               <div className="p-6 sm:p-8 overflow-y-auto space-y-6 flex-grow">
                 {/* Title */}
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900 leading-tight">
-                  {selectedBlog.title}
+                  {language === "bn" ? (selectedBlog.titleBengali || selectedBlog.title) : (selectedBlog.titleEnglish || selectedBlog.title)}
                 </h2>
 
                 {/* Author Bar */}
@@ -297,19 +309,9 @@ export default function BlogSection() {
 
                 {/* Full Article Text */}
                 <div className="prose prose-stone max-w-none space-y-4 text-stone-700 leading-relaxed text-sm sm:text-base font-normal whitespace-pre-line">
-                  {selectedBlog.content ? (
-                    selectedBlog.content
-                  ) : (
-                    <>
-                      <p>{selectedBlog.excerpt}</p>
-                      <p>
-                        জিয়নকাঠির তেরো বছরের কাজের মূল উদ্দেশ্য হলো প্রকৃতি ও মানুষের সম্পর্ককে আবার সুদৃঢ় ও ছন্দময় করা। বিষমুক্ত জৈব কৃষি, দেশীয় ধানের প্রজাতি সংরক্ষণ এবং ভবিষ্যতের জন্য সৌর শক্তি নির্ভর গ্রামীণ অবকাঠামো গড়ে তোলাই আমাদের অঙ্গীকার।
-                      </p>
-                      <p>
-                        আমরা বিশ্বাস করি, কেবল বক্তৃতায় নয়, মাটিতে হাত রেখে কাজ করলেই আসল পরিবর্তন সম্ভব। প্রতিটি পদক্ষেপে গ্রামের কৃষক ও শিশুদের যুক্ত করে আমরা এক টেকসই সমাজ গড়ে তুলতে সচেষ্ট।
-                      </p>
-                    </>
-                  )}
+                  {language === "bn"
+                    ? (selectedBlog.contentBengali || selectedBlog.content || selectedBlog.excerpt)
+                    : (selectedBlog.contentEnglish || selectedBlog.content || selectedBlog.excerptEnglish || selectedBlog.excerpt)}
                 </div>
 
                 {/* Interactive Comments Section */}
