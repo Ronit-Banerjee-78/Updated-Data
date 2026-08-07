@@ -3,20 +3,113 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Settings, Users, Image as ImageIcon, BookOpen, Briefcase, Info, Plus, Trash, Save, CheckCircle, Upload, Video, HandHelping, Check, X, Play, RefreshCw, Globe, Sparkles, FileText, Tag, Type, MapPin, Layers, Eye, Bell, Send, Megaphone, Award } from "lucide-react";
 import { SiteContext } from '../context/SiteContext';
+import { getApiUrl } from '../services/apiClient';
 
 export default function AdminDashboard({ userSession, setUserSession }) {
   const [activeTab, setActiveTab] = useState("volunteers");
   const [saved, setSaved] = useState(false);
 
   const { siteData, setSiteData: saveSiteData, loading } = useContext(SiteContext);
-  const [data, setData] = useState(siteData);
+  const [dataState, setDataState] = useState(null);
+  const data = dataState ?? siteData;
+  const setData = (newData) => {
+    setDataState(typeof newData === 'function' ? newData(data) : newData);
+  };
+
+  // Pop-Up Creation Modal State
+  const [creationModal, setCreationModal] = useState(null);
+
+  const openCreateModal = (type, title, defaultItem) => {
+    setCreationModal({
+      type,
+      title,
+      formData: { ...defaultItem }
+    });
+  };
+
+  const updateModalForm = (field, value) => {
+    setCreationModal(prev => prev ? ({
+      ...prev,
+      formData: { ...prev.formData, [field]: value }
+    }) : null);
+  };
+
+  const handleModalFileUpload = async (e, targetField) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(getApiUrl('/api/files'), {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        let errorMsg = `Upload failed (${res.status})`;
+        try {
+          const errRes = await res.json();
+          errorMsg = errRes.error || errorMsg;
+        } catch (e) {
+          if (res.status === 413) errorMsg = "File is too large to upload.";
+        }
+        alert(errorMsg);
+        return;
+      }
+
+      const result = await res.json();
+      if (result.success) {
+        updateModalForm(targetField, result.url);
+      } else {
+        alert(result.error || "Upload failed");
+      }
+    } catch (error) {
+      console.error("Modal file upload error:", error);
+      alert("Network error: Failed to upload file.");
+    }
+  };
+
+  const saveModalItem = async () => {
+    if (!creationModal) return;
+    const newItem = { ...creationModal.formData, id: Date.now() };
+
+    const currentList = data[creationModal.type] || [];
+    const updatedArray = [newItem, ...currentList];
+    const updatedData = { ...data, [creationModal.type]: updatedArray };
+
+    setData(updatedData);
+    await saveSiteData(updatedData);
+
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    setCreationModal(null);
+  };
 
   // System status state
   const [systemStatus, setSystemStatus] = useState(null);
 
+  useEffect(() => {
+    let isMounted = true;
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch(getApiUrl('/api/status'));
+        const json = await res.json();
+        if (json.success && isMounted) {
+          setSystemStatus(json);
+        }
+      } catch (e) {
+        console.error("Error fetching system status:", e);
+      }
+    };
+    fetchStatus();
+    return () => { isMounted = false; };
+  }, []);
+
   const fetchSystemStatus = async () => {
     try {
-      const res = await fetch('/api/status');
+      const res = await fetch(getApiUrl('/api/status'));
       const json = await res.json();
       if (json.success) {
         setSystemStatus(json);
@@ -26,9 +119,6 @@ export default function AdminDashboard({ userSession, setUserSession }) {
     }
   };
 
-  useEffect(() => {
-    fetchSystemStatus();
-  }, []);
   const [volunteers, setVolunteers] = useState([]);
   const [loadingVolunteers, setLoadingVolunteers] = useState(false);
   const [volFilter, setVolFilter] = useState("all");
@@ -40,16 +130,10 @@ export default function AdminDashboard({ userSession, setUserSession }) {
   const [notifBody, setNotifBody] = useState("");
   const [notifPriority, setNotifPriority] = useState("normal");
 
-  const [prevSiteData, setPrevSiteData] = useState(siteData);
-  if (siteData !== prevSiteData) {
-    setPrevSiteData(siteData);
-    setData(siteData);
-  }
-
   const fetchVolunteers = async () => {
     setLoadingVolunteers(true);
     try {
-      const res = await fetch('/api/volunteers');
+      const res = await fetch(getApiUrl('/api/volunteers'));
       const result = await res.json();
       if (result.success) {
         setVolunteers(result.volunteers || []);
@@ -64,7 +148,7 @@ export default function AdminDashboard({ userSession, setUserSession }) {
   useEffect(() => {
     let active = true;
     if (activeTab === "volunteers") {
-      fetch('/api/volunteers')
+      fetch(getApiUrl('/api/volunteers'))
         .then(res => res.json())
         .then(result => {
           if (active && result.success) {
@@ -78,7 +162,7 @@ export default function AdminDashboard({ userSession, setUserSession }) {
 
   const handleUpdateVolunteerStatus = async (id, status) => {
     try {
-      const res = await fetch(`/api/volunteers/${id}`, {
+      const res = await fetch(getApiUrl(`/api/volunteers/${id}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -95,7 +179,7 @@ export default function AdminDashboard({ userSession, setUserSession }) {
   const handleDeleteVolunteer = async (id) => {
     if (!confirm("Are you sure you want to delete this volunteer application?")) return;
     try {
-      const res = await fetch(`/api/volunteers/${id}`, {
+      const res = await fetch(getApiUrl(`/api/volunteers/${id}`), {
         method: 'DELETE'
       });
       const result = await res.json();
@@ -128,7 +212,7 @@ export default function AdminDashboard({ userSession, setUserSession }) {
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/files', {
+      const res = await fetch(getApiUrl('/api/files'), {
         method: 'POST',
         body: formData,
       });
@@ -252,8 +336,8 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                         <div className="flex items-center space-x-2">
                           <h4 className="text-base font-extrabold text-stone-900">{vol.name}</h4>
                           <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${vol.status === 'approved' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
-                              vol.status === 'rejected' ? 'bg-rose-100 text-rose-800 border-rose-200' :
-                                'bg-amber-100 text-amber-800 border-amber-200'
+                            vol.status === 'rejected' ? 'bg-rose-100 text-rose-800 border-rose-200' :
+                              'bg-amber-100 text-amber-800 border-amber-200'
                             }`}>
                             {vol.status || 'pending'}
                           </span>
@@ -660,7 +744,7 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                   <p className="text-xs text-stone-500">Manage executive leadership members rendered at the top of the Members page.</p>
                 </div>
                 <button
-                  onClick={() => addArrayItem("members", { name: "", role: "", bio: "", image: "" })}
+                  onClick={() => openCreateModal("members", "Add Executive Member", { name: "", role: "", bio: "", image: "" })}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-sm"
                 >
                   <Plus className="w-4 h-4" /> <span>Add Executive Member</span>
@@ -738,7 +822,7 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                   <p className="text-xs text-stone-500">Manage field coordinators and volunteers displayed in the Grassroots Impact Network section.</p>
                 </div>
                 <button
-                  onClick={() => addArrayItem("volunteersList", { name: "", designation: "", location: "Purba Bardhaman, WB", bio: "", image: "" })}
+                  onClick={() => openCreateModal("volunteersList", "Add Community Volunteer", { name: "", designation: "", location: "Purba Bardhaman, WB", bio: "", image: "" })}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-sm"
                 >
                   <Plus className="w-4 h-4" /> <span>Add Volunteer</span>
@@ -821,7 +905,7 @@ export default function AdminDashboard({ userSession, setUserSession }) {
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-stone-900">Gallery Media</h3>
-              <button onClick={() => addArrayItem("gallery", { title: "", type: "Photo", url: "", category: "events" })} className="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center space-x-1 hover:bg-emerald-200">
+              <button onClick={() => openCreateModal("gallery", "Add Gallery Media", { title: "", type: "Photo", url: "", category: "events" })} className="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center space-x-1 hover:bg-emerald-200">
                 <Plus className="w-4 h-4" /> <span>Add Media</span>
               </button>
             </div>
@@ -864,7 +948,7 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                 <p className="text-xs text-stone-300 mt-0.5">Write stories in Bengali & English, upload custom images to Cloudinary, and publish instantly.</p>
               </div>
               <button
-                onClick={() => addArrayItem("blogs", {
+                onClick={() => openCreateModal("blogs", "Create New Blog Post", {
                   title: "",
                   titleEnglish: "",
                   category: "জৈব কৃষি / Organic Agriculture",
@@ -1156,10 +1240,10 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                 <p className="text-xs text-stone-300 mt-0.5">Manage featured NGO field projects with Cloudinary photos and location details.</p>
               </div>
               <button
-                onClick={() => addArrayItem("work", {
+                onClick={() => openCreateModal("work", "Add New NGO Work Project", {
                   title: "",
                   titleEnglish: "",
-                  category: "জৈব কৃষি / Organic Agriculture",
+                  category: "জৈব কৃষি (Organic Agriculture)",
                   location: "Pratappur, Aushgram, WB",
                   impact: "300+ Farmers",
                   description: "",
@@ -1430,6 +1514,444 @@ export default function AdminDashboard({ userSession, setUserSession }) {
           </div>
         </div>
       </div>
+
+      {/* Pop-Up Creation Modal */}
+      {creationModal && (
+        <div className="fixed inset-0 bg-stone-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl max-w-2xl w-full p-6 sm:p-8 space-y-6 my-8 relative">
+            <div className="flex justify-between items-center border-b border-stone-200 pb-4">
+              <div>
+                <span className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest block mb-0.5">
+                  Admin Creation Pop-Up
+                </span>
+                <h3 className="text-2xl font-extrabold text-stone-900">{creationModal.title}</h3>
+              </div>
+              <button
+                onClick={() => setCreationModal(null)}
+                className="text-stone-400 hover:text-stone-800 bg-stone-100 p-2 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+              {/* Executive Member Form */}
+              {creationModal.type === "members" && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Executive Member Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Raju Mandal"
+                      value={creationModal.formData.name || ""}
+                      onChange={(e) => updateModalForm("name", e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-bold focus:outline-emerald-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Role / Title *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Lead Farmer & Seed Conservator"
+                      value={creationModal.formData.role || ""}
+                      onChange={(e) => updateModalForm("role", e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-medium focus:outline-emerald-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Member Photo</label>
+                    <div className="flex gap-3 items-center">
+                      <input
+                        type="text"
+                        placeholder="Photo URL or click Upload"
+                        value={creationModal.formData.image || ""}
+                        onChange={(e) => updateModalForm("image", e.target.value)}
+                        className="flex-1 bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-mono"
+                      />
+                      <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-xs cursor-pointer shrink-0 transition-colors flex items-center space-x-1">
+                        <Upload className="w-4 h-4" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleModalFileUpload(e, "image")}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                    {creationModal.formData.image && (
+                      <div className="w-16 h-16 rounded-full overflow-hidden border border-stone-300 mt-2">
+                        <img src={creationModal.formData.image} alt="Member" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Biography / Mission</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Short statement or history..."
+                      value={creationModal.formData.bio || ""}
+                      onChange={(e) => updateModalForm("bio", e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-medium focus:outline-emerald-500"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Community Volunteer Form */}
+              {creationModal.type === "volunteersList" && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Volunteer Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Sutapa Sarkar"
+                      value={creationModal.formData.name || ""}
+                      onChange={(e) => updateModalForm("name", e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-bold focus:outline-emerald-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Field Role / Designation</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Primary Education Lead"
+                        value={creationModal.formData.designation || ""}
+                        onChange={(e) => updateModalForm("designation", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-medium focus:outline-emerald-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Location</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Purba Bardhaman, WB"
+                        value={creationModal.formData.location || ""}
+                        onChange={(e) => updateModalForm("location", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-medium focus:outline-emerald-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Volunteer Photo</label>
+                    <div className="flex gap-3 items-center">
+                      <input
+                        type="text"
+                        placeholder="Photo URL or click Upload"
+                        value={creationModal.formData.image || ""}
+                        onChange={(e) => updateModalForm("image", e.target.value)}
+                        className="flex-1 bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-mono"
+                      />
+                      <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-xs cursor-pointer shrink-0 transition-colors flex items-center space-x-1">
+                        <Upload className="w-4 h-4" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleModalFileUpload(e, "image")}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Bio / Work Area</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Field activities..."
+                      value={creationModal.formData.bio || ""}
+                      onChange={(e) => updateModalForm("bio", e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-medium focus:outline-emerald-500"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Gallery Form */}
+              {creationModal.type === "gallery" && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Media Title *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Nabanna Harvest Festival 2026"
+                      value={creationModal.formData.title || ""}
+                      onChange={(e) => updateModalForm("title", e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-bold focus:outline-emerald-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Type</label>
+                      <select
+                        value={creationModal.formData.type || "Photo"}
+                        onChange={(e) => updateModalForm("type", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-bold focus:outline-emerald-500"
+                      >
+                        <option value="Photo">Photo</option>
+                        <option value="Video">Video</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Category</label>
+                      <select
+                        value={creationModal.formData.category || "events"}
+                        onChange={(e) => updateModalForm("category", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-bold focus:outline-emerald-500"
+                      >
+                        <option value="events">Events</option>
+                        <option value="campaigns">Campaigns</option>
+                        <option value="impact">Impact</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Media File or URL</label>
+                    <div className="flex gap-3 items-center">
+                      <input
+                        type="text"
+                        placeholder="URL or click Upload"
+                        value={creationModal.formData.url || ""}
+                        onChange={(e) => updateModalForm("url", e.target.value)}
+                        className="flex-1 bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-mono"
+                      />
+                      <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-xs cursor-pointer shrink-0 transition-colors flex items-center space-x-1">
+                        <Upload className="w-4 h-4" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept={creationModal.formData.type === 'Video' ? "video/*" : "image/*"}
+                          onChange={(e) => handleModalFileUpload(e, "url")}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Blog Post Form */}
+              {creationModal.type === "blogs" && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Bengali Title (বাংলা শিরোনাম)</label>
+                      <input
+                        type="text"
+                        placeholder="বাংলা শিরোনাম..."
+                        value={creationModal.formData.title || ""}
+                        onChange={(e) => updateModalForm("title", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-bold focus:outline-emerald-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">English Title</label>
+                      <input
+                        type="text"
+                        placeholder="English title..."
+                        value={creationModal.formData.titleEnglish || ""}
+                        onChange={(e) => updateModalForm("titleEnglish", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-bold focus:outline-emerald-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Category</label>
+                      <select
+                        value={creationModal.formData.category || "জৈব কৃষি / Organic Agriculture"}
+                        onChange={(e) => updateModalForm("category", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2.5 text-xs font-bold focus:outline-emerald-500"
+                      >
+                        <option value="জৈব কৃষি / Organic Agriculture">জৈব কৃষি (Organic Agriculture)</option>
+                        <option value="বীজ সংরক্ষণ / Native Seed Preservation">বীজ সংরক্ষণ (Native Seed Preservation)</option>
+                        <option value="সহায়ক শিক্ষা / Auxiliary Education">সহায়ক শিক্ষা (Auxiliary Education)</option>
+                        <option value="পরিবেশ সুরক্ষা / Ecology & Environment">পরিবেশ সুরক্ষা (Ecology & Environment)</option>
+                        <option value="সর্প সচেতনতা / Snake Awareness & Health">সর্প সচেতনতা (Snake Awareness & Health)</option>
+                        <option value="সংস্থা বার্তা / NGO Announcements">সংস্থা বার্তা (NGO Announcements)</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Author</label>
+                      <input
+                        type="text"
+                        value={creationModal.formData.author || "জিয়নকাঠি টিম"}
+                        onChange={(e) => updateModalForm("author", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2.5 text-xs font-medium focus:outline-emerald-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Date</label>
+                      <input
+                        type="text"
+                        value={creationModal.formData.date || "আগস্ট ২০২৬"}
+                        onChange={(e) => updateModalForm("date", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2.5 text-xs font-medium focus:outline-emerald-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Featured Image</label>
+                    <div className="flex gap-3 items-center">
+                      <input
+                        type="text"
+                        placeholder="Image URL or click Upload"
+                        value={creationModal.formData.image || ""}
+                        onChange={(e) => updateModalForm("image", e.target.value)}
+                        className="flex-1 bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-mono"
+                      />
+                      <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-xs cursor-pointer shrink-0 transition-colors flex items-center space-x-1">
+                        <Upload className="w-4 h-4" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleModalFileUpload(e, "image")}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                    {creationModal.formData.image && (
+                      <div className="h-28 rounded-xl overflow-hidden border border-stone-200 mt-2">
+                        <img src={creationModal.formData.image} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Bengali Short Excerpt</label>
+                    <textarea
+                      rows={2}
+                      placeholder="সংক্ষিপ্ত বিবরণ..."
+                      value={creationModal.formData.excerpt || ""}
+                      onChange={(e) => updateModalForm("excerpt", e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-medium focus:outline-emerald-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Bengali Body Content</label>
+                    <textarea
+                      rows={4}
+                      placeholder="সম্পূর্ণ বিস্তারিত নিবন্ধ..."
+                      value={creationModal.formData.content || ""}
+                      onChange={(e) => updateModalForm("content", e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-medium focus:outline-emerald-500"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* NGO Work Project Form */}
+              {creationModal.type === "work" && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Bengali Project Title</label>
+                      <input
+                        type="text"
+                        placeholder="প্রকল্পের নাম..."
+                        value={creationModal.formData.title || ""}
+                        onChange={(e) => updateModalForm("title", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-bold focus:outline-emerald-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">English Project Title</label>
+                      <input
+                        type="text"
+                        placeholder="English title..."
+                        value={creationModal.formData.titleEnglish || ""}
+                        onChange={(e) => updateModalForm("titleEnglish", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-sm font-bold focus:outline-emerald-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Category</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. জৈব কৃষি (Organic Agriculture)"
+                        value={creationModal.formData.category || ""}
+                        onChange={(e) => updateModalForm("category", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-medium focus:outline-emerald-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Location</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Pratappur, Aushgram, WB"
+                        value={creationModal.formData.location || ""}
+                        onChange={(e) => updateModalForm("location", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-medium focus:outline-emerald-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 uppercase">Impact Metric</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 300+ Farmers Impacted"
+                        value={creationModal.formData.impact || ""}
+                        onChange={(e) => updateModalForm("impact", e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-medium focus:outline-emerald-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Field Photo</label>
+                    <div className="flex gap-3 items-center">
+                      <input
+                        type="text"
+                        placeholder="Photo URL or click Upload"
+                        value={creationModal.formData.image || ""}
+                        onChange={(e) => updateModalForm("image", e.target.value)}
+                        className="flex-1 bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-mono"
+                      />
+                      <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-xs cursor-pointer shrink-0 transition-colors flex items-center space-x-1">
+                        <Upload className="w-4 h-4" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleModalFileUpload(e, "image")}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700 uppercase">Project Description</label>
+                    <textarea
+                      rows={3}
+                      placeholder="প্রকল্পের বিস্তারিত বিবরণ..."
+                      value={creationModal.formData.description || ""}
+                      onChange={(e) => updateModalForm("description", e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-medium focus:outline-emerald-500"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
+              <button
+                onClick={() => setCreationModal(null)}
+                className="px-5 py-2.5 rounded-xl border border-stone-200 text-stone-700 font-bold text-xs hover:bg-stone-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveModalItem}
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition-all shadow-md shadow-emerald-200 flex items-center space-x-1.5"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save &amp; Place in Position</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

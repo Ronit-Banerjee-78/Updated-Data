@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { Users, Heart, Sparkles, CheckCircle2, Send, MapPin, Calendar, BookOpen, Leaf, Shield, UserCheck } from "lucide-react";
+import { getApiUrl } from "../services/apiClient";
 
 export default function VolunteerSection() {
   const [formData, setFormData] = useState({
@@ -31,7 +32,7 @@ export default function VolunteerSection() {
     setError("");
 
     try {
-      const response = await fetch('/api/volunteers', {
+      const response = await fetch(getApiUrl('/api/volunteers'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -83,7 +84,7 @@ export default function VolunteerSection() {
       {/* Main Content */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          
+
           {/* Info Side */}
           <div className="lg:col-span-5 space-y-8">
             <div>
